@@ -1,0 +1,276 @@
+%Case 2:MFNN modelling
+%MFNN-1:reactor
+%data processing
+data00=xlsread('Data for case 2.xlsx');
+data1=data00(3:602,9:18);
+[m,n]=size(data1);
+mu1 = mean(data1);
+sig1 = std(data1);
+ndata1= (data1 - ones(length(data1(:,1)),1)*mu1) ./...
+    (ones(length(data1(:,1)),1)*sig1); 
+%10-crossvalidation 
+k=10;
+indices = crossvalind('KFold',m,k);
+record = zeros(1,k);
+for i=1:k
+    test1=(indices==i);
+    t_rain1=~test1;
+    Train_Data=ndata1(t_rain1,:); 
+    TestData=ndata1(test1,:); 
+    Feature = Train_Data(:,1:5);
+    test_Feature = TestData(:,1:5);
+    DPP = Train_Data(:,6:10);
+    test_DPP = TestData(:,6:10); 
+    Feature = Feature';
+    test_Feature = test_Feature';
+    DPP = DPP';
+    test_DPP = test_DPP';
+    net1=newff(Feature,DPP,6,{'tansig','purelin'},'trainlm');
+    net1 = init(net1);
+    [nets1,tr] = train(net1, Feature, DPP);
+    predict = nets1(test_Feature);
+    perf = mse(nets1,test_DPP,predict);    
+    record(i) = perf;        
+end
+mean_mse1 = mean(record);
+rmse1 = sqrt(mean_mse1);
+m1=find(record==min(record))
+%final model
+test1=(indices==m1);
+t_rain1=~test1; 
+Train_Data=ndata1(t_rain1,:);  
+TestData=ndata1(test1,:);
+Feature = Train_Data(:,1:5);
+test_Feature = TestData(:,1:5);
+DPP = Train_Data(:,6:10);
+test_DPP = TestData(:,6:10); 
+Feature = Feature';
+test_Feature = test_Feature';
+DPP = DPP';
+test_DPP = test_DPP';
+net1=newff(Feature,DPP,6,{'tansig','purelin'},'trainlm');
+net1 = init(net1);
+[netr,tr] = train(net1, Feature, DPP);
+predict1 = netr(test_Feature);
+perf1 = mse(netr,test_DPP,predict1)
+elapsed_time=toc(start_time);
+disp(['Training time:',num2str(elapsed_time),'s'])
+save M_Reactor netr
+%MFNN-2:flash
+data2=data00(3:602,14:27);
+mu2 = mean(data2);
+sig2 = std(data2);
+ndata2 = (data2 - ones(length(data2(:,1)),1)*mu2) ./...
+    (ones(length(data2(:,1)),1)*sig2);
+indices = crossvalind('KFold',m,k);
+record = zeros(1,k);
+for i=1:k
+    test1=(indices==i); 
+    t_rain1=~test1; 
+    Train_Data=ndata2(t_rain1,:);
+    TestData=ndata2(test1,:); 
+    Feature = Train_Data(:,1:5);
+    test_Feature = TestData(:,1:5);
+    DPP = Train_Data(:,6:14);
+    test_DPP = TestData(:,6:14); 
+    Feature = Feature';
+    test_Feature = test_Feature';
+    DPP = DPP';
+    test_DPP = test_DPP';
+    net1=newff(Feature,DPP,8,{'tansig','purelin'},'trainlm');
+    net1 = init(net1);
+    [nets2,tr] = train(net1, Feature, DPP);
+    predict = nets2(test_Feature);
+    perf = mse(nets2,test_DPP,predict);    
+    record(i) = perf;        
+end
+mean_mse2 = mean(record);
+rmse2 = sqrt(mean_mse2);
+m2=find(record==min(record))
+%final model
+test1=(indices==m2);
+t_rain1=~test1; 
+Train_Data=ndata2(t_rain1,:);
+TestData=ndata2(test1,:); 
+Feature = Train_Data(:,1:5);
+test_Feature = TestData(:,1:5);
+DPP = Train_Data(:,6:14);
+test_DPP = TestData(:,6:14); 
+Feature = Feature';
+test_Feature = test_Feature';
+DPP = DPP';
+test_DPP = test_DPP';
+net1=newff(Feature,DPP,8,{'tansig','purelin'},'trainlm');
+net1 = init(net1);
+[netf,tr] = train(net1, Feature, DPP);
+predict2 = netf(test_Feature);
+perf2 = mse(netf,test_DPP,predict2)
+save M_Flash netf
+%MFNN-3:tower
+data3=data00(3:602,24:32);
+mu3 = mean(data3);
+sig3 = std(data3);
+ndata3 = (data3 - ones(length(data3(:,1)),1)*mu3) ./...
+    (ones(length(data3(:,1)),1)*sig3); 
+indices = crossvalind('KFold',m,k);
+record = zeros(1,k);
+sigma = sqrt(2/(4+5));
+r = randn;
+r = sigma * r;
+init_w21 =randn(10,4)*sqrt(2/(4+10));
+init_b2  =randn(10,1);
+init_w32 =randn(5,10)*sqrt(2/(10+5));
+init_b3  =randn(5,1);
+net1.iw{1,1} = init_w21 ;
+net1.b{1}    = init_b2  ;
+net1.lw{2,1} = init_w32 ;
+net1.b{2}    = init_b3  ; 
+for i=1:10
+    test1=(indices==i); 
+    t_rain1=~test1;
+    Train_Data=ndata3(t_rain1,:);
+    TestData=ndata3(test1,:); 
+    Feature = Train_Data(:,1:4);
+    test_Feature = TestData(:,1:4);
+    DPP = Train_Data(:,5:9);
+    test_DPP = TestData(:,5:9); 
+    Feature = Feature';
+    test_Feature = test_Feature';
+    DPP = DPP';
+    test_DPP = test_DPP';
+    net1=newff(Feature,DPP,10,{'tansig','purelin'},'trainlm');
+    net1.iw{1,1} = init_w21 ;
+    net1.b{1}    = init_b2  ;
+    net1.lw{2,1} = init_w32 ;
+    net1.b{2}    = init_b3  ;
+    [net1,tr] = train(net1, Feature, DPP);
+    predict = net1(test_Feature);
+    perf = mse(net1,test_DPP,predict);    
+    record(i) = perf;        
+end
+mean_mse3 = mean(record);
+rmse3 = sqrt(mean_mse3);
+m3=find(record==min(record))
+%final model
+test1=(indices==m3); 
+t_rain1=~test1;
+Train_Data=ndata3(t_rain1,:); 
+TestData=ndata3(test1,:); 
+Feature = Train_Data(:,1:4);
+test_Feature = TestData(:,1:4);
+DPP = Train_Data(:,5:9);
+test_DPP = TestData(:,5:9); 
+Feature = Feature';
+test_Feature = test_Feature';
+DPP = DPP';
+test_DPP = test_DPP';
+net1=newff(Feature,DPP,10,{'tansig','purelin'},'trainlm');
+% net1 = init(net1);
+net1.iw{1,1} = init_w21 ;
+net1.b{1}    = init_b2  ;
+net1.lw{2,1} = init_w32 ;
+net1.b{2}    = init_b3  ;
+[nett,tr] = train(net1, Feature, DPP);
+predict3 = nett(test_Feature);
+perf3 = mse(nett,test_DPP,predict3)
+save M_Tower nett
+%Case2:GFNN modelling
+data0=data00(3:602,2:8);
+mu = mean(data0);
+sig = std(data0);
+ndata = (data0 - ones(length(data0(:,1)),1)*mu) ./...
+    (ones(length(data0(:,1)),1)*sig); 
+indices = crossvalind('KFold',m,k);
+record = zeros(1,k);
+for i=1:k
+    test1=(indices==i); 
+    t_rain1=~test1;
+    Train_Data=ndata(t_rain1,:); 
+    TestData=ndata(test1,:); 
+    Feature = Train_Data(:,1:2);
+    test_Feature = TestData(:,1:2);
+    DPP = Train_Data(:,3:7);
+    test_DPP = TestData(:,3:7); 
+    Feature = Feature';
+    test_Feature = test_Feature';
+    DPP = DPP';
+    test_DPP = test_DPP';
+    net1=newff(Feature,DPP,[6,8,10],{'tansig','purelin'},'trainlm');
+    net1 = init(net1);
+    [nets,tr] = train(net1, Feature, DPP);
+    predict = nets(test_Feature);
+    perf = mse(nets,test_DPP,predict);    
+    record(i) = perf;        
+end
+mean_mse = mean(record);
+rmse = sqrt(mean_mse);
+m=find(record==min(record));
+%final model
+test1=(indices==m); 
+t_rain1=~test1; 
+Train_Data=ndata(t_rain1,:); 
+TestData=ndata(test1,:); 
+Feature = Train_Data(:,1:2);
+test_Feature = TestData(:,1:2);
+DPP = Train_Data(:,3:7);
+test_DPP = TestData(:,3:7); 
+Feature = Feature';
+test_Feature = test_Feature';
+DPP = DPP';
+test_DPP = test_DPP';
+net1=newff(Feature,DPP,[6,8,10],{'tansig','purelin'},'trainlm');
+net1 = init(net1);
+[net0,tr] = train(net1, Feature, DPP);
+predict = net0(test_Feature);
+perf = mse(net0,test_DPP,predict)
+save G_whole_process net0
+%Case2: cycle process modelling
+data4=data00(3:602,2:27);
+mu4 = mean(data4);
+sig4 = std(data4);
+ndata4 = (data4 - ones(length(data4(:,1)),1)*mu4) ./...
+    (ones(length(data4(:,1)),1)*sig4);
+indices = crossvalind('KFold',m,k);
+record = zeros(1,k);
+for i=1:k
+    test1=(indices==i); 
+    t_rain1=~test1; 
+    Train_Data=ndata4(t_rain1,:);
+    TestData=ndata4(test1,:); 
+    Feature = Train_Data(:,1:2);
+    test_Feature = TestData(:,1:2);
+    DPP = Train_Data(:,18:26);
+    test_DPP = TestData(:,18:26); 
+    Feature = Feature';
+    test_Feature = test_Feature';
+    DPP = DPP';
+    test_DPP = test_DPP';
+    net1=newff(Feature,DPP,[6,8],{'tansig','purelin'},'trainlm');
+    net1 = init(net1);
+    [nets2,tr] = train(net1, Feature, DPP);
+    predict = nets2(test_Feature);
+    perf = mse(nets2,test_DPP,predict);    
+    record(i) = perf;        
+end
+mean_mse2 = mean(record);
+rmse2 = sqrt(mean_mse2);
+m2=find(record==min(record))
+%final model
+test1=(indices==m2);
+t_rain1=~test1; 
+Train_Data=ndata4(t_rain1,:);
+TestData=ndata4(test1,:); 
+Feature = Train_Data(:,1:2);
+test_Feature = TestData(:,1:2);
+DPP = Train_Data(:,18:26);
+test_DPP = TestData(:,18:26); 
+Feature = Feature';
+test_Feature = test_Feature';
+DPP = DPP';
+test_DPP = test_DPP';
+net1=newff(Feature,DPP,[6,8],{'tansig','purelin'},'trainlm');
+net1 = init(net1);
+[netc,tr] = train(net1, Feature, DPP);
+predict2 = netc(test_Feature);
+perf2 = mse(netc,test_DPP,predict2)
+save Cycle netc

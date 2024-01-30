@@ -1,0 +1,75 @@
+load k0.mat
+load k2.mat
+load k3.mat
+load k1.mat
+data00=xlsread('Data for case 1.xlsx');
+data0=data00(2:601,3:14); 
+data01=data00(602:702,3:14);
+mu = mean(data0);
+sig = std(data0);
+ndata = (data0 - ones(length(data0(:,1)),1)*mu) ./...
+    (ones(length(data0(:,1)),1)*sig);
+%GFNN
+data1=data01(:,1:4);
+ndataA = (data1 - ones(length(data1(:,1)),1)*mu(1:4)) ./...
+    (ones(length(data1(:,1)),1)*sig(1:4));  
+ndataA=ndataA';
+
+y0A=nets0(ndataA); % outputs value of GFNN
+y0A=y0A';
+y0B=y0A;
+y0B=y0A.*ones(length(data1(:,1)),1).*sig(5:12)+...
+   ones(length(data1(:,1)),1)*mu(5:12); 
+data2=data01(:,5:12); 
+error1=y0B-data2;
+data2=data2';
+[c,l]=size(data2);
+MAE1=sum(abs(error1))/l  %Mean-MSE
+MAX_ERROR1=max(abs(error1))
+error1_2=error1.^2;
+SSE1=sum(error1_2);
+MSE1=SSE1/l;
+%MFNN
+data3=data01(:,1:2);  
+ndataB1 = (data3 - ones(length(data3(:,1)),1)*mu(1:2)) ./...
+    (ones(length(data3(:,1)),1)*sig(1:2)); 
+ndataB1=ndataB1';
+y1A=nets1(ndataB1);    %outputs value of MFNN-1
+y1A=y1A';
+y1B=y1A.*ones(length(data1(:,1)),1).*sig(9:12)+...
+    ones(length(data1(:,1)),1)*mu(9:12);
+data4=data01(:,3:4); 
+ndataB2 = (data4 - ones(length(data4(:,1)),1)*mu(3:4)) ./...
+    (ones(length(data4(:,1)),1)*sig(3:4)); 
+x2A=[ndataB2,y1A]';
+y2A=nets2(x2A); %outputs value of MFNN-2
+y2A=y2A';
+y2B=y2A.*ones(length(data1(:,1)),1).*sig(5:8)+...
+    ones(length(data1(:,1)),1)*mu(5:8);
+y2B=[y2B,y1B];
+data2=data2';
+error2=y2B-data2;
+MAE2=sum(abs(error2))/l;
+MAX_ERROR2=max(abs(error2))
+error2_2=error2.*error2;
+SSE2=sum(error2_2)
+MSE2=SSE2/l
+%FIGURE
+for j=1:1:8
+    set(gca,'LooseInset', max(get(gca,'TightInset'), 0.02))
+    subplot(4,2,j)
+    plot(error1(:,j),'r')
+    hold on
+    plot(error2(:,j),'b')
+    legend('GFNN','MFNN');
+    xlabel('data array');
+    xlim([0,100])
+    ylabel('Mass flow error value');
+    label2=["Component B of Product Stream","Component DEB of Product Stream",...
+        "Component E of Product Stream","Component EB of Product Stream",...
+        "Component B of Stream 3","Component DEB of Stream 3",...
+        "Component E of Stream 3","Component EB  of Stream 3"];
+    title(label2(j));
+    hold off
+end
+

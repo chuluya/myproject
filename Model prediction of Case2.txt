@@ -1,0 +1,60 @@
+load G_whole_process.mat
+load MFNN_Reactor.mat
+load M_Flash.mat
+load M_Tower.mat
+data00=xlsread('Data for case 2.xlsx');
+data0=data00(3:602,2:8);
+mu = mean(data0);
+sig = std(data0);
+data1=data00(603:702,2:3)'；
+ndataA = (data1 - mu(1:2)') ./sig(1:2)'; 
+y0A=net0(ndataA); %outputs value of GFNN
+y0B=y0A.*sig(3:7)'+mu(3:7)';
+data2=data00(603:702,4:8)'; 
+error0=y0B-data2;
+data3=data00(3:602,9:18);
+mu1 = mean(data3);
+sig1 = std(data3);
+data4=data00(3:602,14:27);
+mu2 = mean(data4);
+sig2 = std(data4);
+data5=data00(3:602,24:32);
+mu3 = mean(data5);
+sig3 = std(data5);
+% Broyden
+syms p
+Data0=[];
+data6=data00(603:702,19:23)'; 
+data6=(data6-mu2(6:10)')./sig2(6:10)';
+for i = 1:1:100
+     p0=rand(5,1);
+     p0=data6(:,i);
+     x_mixer=[data1(1,i);data1(2,i)];    
+     xs=Broyden2(@AANNN,1e-14,p0);
+     Data0(:,i) = xs;
+end
+p=Data0.*sig2(6:10)'+mu2(6:10)';
+p= Data0;
+X_REACT=[data1(1,:)+p(1,:);p(2,:);p(3,:);p(4,:);data1(2,:)+p(5,:)]; 
+data7=data00(603:702,9:13)';
+x1AA=(X_REACT - mu1(1:5)') ./sig1(1:5)';
+y1AA= netr(x1AA);%outputs value of MFNN-1
+y1BB=y1AA.*sig1(6:10)'+mu1(6:10)';
+data8=data00(603:702,14:18)';
+x2AA=(y1BB-mu2(1:5)')./sig2(1:5)';
+y2AA=netf(x2AA);%outputs value of MFNN-2
+y2BB=y2AA.*sig2(6:14)'+mu2(6:14)'; 
+data9=data00(603:702,19:23)'; 
+x3AA0=y2BB(6:9,:);
+x3AA=(x3AA0-mu3(1:4)')./sig3(1:4)';
+y3AA=nett(x3AA); %outputs value of MFNN-3
+y3BB=y3AA.*sig3(5:9)'+mu3(5:9)'; 
+data01=data00(3:602,2:3);
+data11=data00(3:602,24:27);
+data=[data01,data11];
+mu11 = mean(data);
+sig11 = std(data);
+data1=data00(603:702,2:3)';
+ndataA = (data1 - mu11(1:2)') ./sig11(1:2)'; 
+tA0=clock;  
+y4A=netc(ndataA); %outputs value of MFNN modelling for cycle process
