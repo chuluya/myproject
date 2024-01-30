@@ -1,0 +1,3 @@
+1.The training data and test data for case 1 in shown in the "Data for case 1.xlsx".
+2.The training data and test data for case 2 in shown in the "Data for case 2.xlsx".
+3.The codes are run successfully in matlab 2021b.("Model prediction of Case 1.txt","Model prediction of Case 2.txt","Model training of Case 1.txt","Model training of Case 2.txt")
